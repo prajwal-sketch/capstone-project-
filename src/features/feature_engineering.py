@@ -67,6 +67,9 @@ def apply_bow(train_data: pd.DataFrame, test_data: pd.DataFrame, max_features: i
         logging.error('Error during Bag of Words transformation: %s', e)
         raise
 
+os.makedirs('models', exist_ok=True)
+pickle.dump(vectorizer, open('models/vectorizer.pkl', 'wb'))
+
 def save_data(df: pd.DataFrame, file_path: str) -> None:
     """Save the dataframe to a CSV file."""
     try:
