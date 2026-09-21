@@ -36,7 +36,7 @@ jobs:
       - name: Run model tests
         env:
           CAPSTONE_TEST: ${{ secrets.CAPSTONE_TEST }}
-        run: python -m unittest discover -s tests
+        run: python -m unittest discover -s tests -t .
 
       - name: Promote model to production
         if: success()
