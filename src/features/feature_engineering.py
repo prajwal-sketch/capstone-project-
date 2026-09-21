@@ -59,16 +59,15 @@ def apply_bow(train_data: pd.DataFrame, test_data: pd.DataFrame, max_features: i
         test_df = pd.DataFrame(X_test_bow.toarray())
         test_df['label'] = y_test
 
-        pickle.dump(vectorizer, open('models/vectorizer.pkl', 'wb'))
+        os.makedirs('models', exist_ok=True)
+        with open('models/vectorizer.pkl', 'wb') as f:
+            pickle.dump(vectorizer, f)
         logging.info('Bag of Words applied and data transformed')
 
         return train_df, test_df
     except Exception as e:
         logging.error('Error during Bag of Words transformation: %s', e)
         raise
-
-os.makedirs('models', exist_ok=True)
-pickle.dump(vectorizer, open('models/vectorizer.pkl', 'wb'))
 
 def save_data(df: pd.DataFrame, file_path: str) -> None:
     """Save the dataframe to a CSV file."""
@@ -96,6 +95,7 @@ def main():
     except Exception as e:
         logging.error('Failed to complete the feature engineering process: %s', e)
         print(f"Error: {e}")
+        raise
 
 if __name__ == '__main__':
     main()
