@@ -14,25 +14,25 @@ import src.logger.logging
 # Below code block is for production use
 # -------------------------------------------------------------------------------------
 # Set up DagsHub credentials for MLflow tracking
-# dagshub_token = os.getenv("CAPSTONE_TEST")
-# if not dagshub_token:
-#     raise EnvironmentError("CAPSTONE_TEST environment variable is not set")
+dagshub_token = os.getenv("CAPSTONE_TEST")
+if not dagshub_token:
+    raise EnvironmentError("CAPSTONE_TEST environment variable is not set")
 
-# os.environ["MLFLOW_TRACKING_USERNAME"] = dagshub_token
-# os.environ["MLFLOW_TRACKING_PASSWORD"] = dagshub_token
+os.environ["MLFLOW_TRACKING_USERNAME"] = dagshub_token
+os.environ["MLFLOW_TRACKING_PASSWORD"] = dagshub_token
 
-# dagshub_url = "https://dagshub.com"
-# repo_owner = "vikashdas770"
-# repo_name = "YT-Capstone-Project"
+dagshub_url = "https://dagshub.com"
+repo_owner = "prajwal-sketch"
+repo_name = "capstone-project-"
 
-# # Set up MLflow tracking URI
-# mlflow.set_tracking_uri(f'{dagshub_url}/{repo_owner}/{repo_name}.mlflow')
+# Set up MLflow tracking URI
+mlflow.set_tracking_uri(f'{dagshub_url}/{repo_owner}/{repo_name}.mlflow')
 # -------------------------------------------------------------------------------------
 
 # Below code block is for local use
 # -------------------------------------------------------------------------------------
-mlflow.set_tracking_uri('https://dagshub.com/prajwal-sketch/capstone-project-.mlflow')
-dagshub.init(repo_owner='prajwal-sketch', repo_name='capstone-project-', mlflow=True)
+# mlflow.set_tracking_uri('https://dagshub.com/prajwal-sketch/capstone-project-.mlflow')
+# dagshub.init(repo_owner='prajwal-sketch', repo_name='capstone-project-', mlflow=True)
 # -------------------------------------------------------------------------------------
 
 
@@ -96,10 +96,10 @@ def save_metrics(metrics: dict, file_path: str) -> None:
         logging.error('Error occurred while saving the metrics: %s', e)
         raise
 
-def save_model_info(run_id: str, model_path: str, file_path: str) -> None:
-    """Save the model run ID and path to a JSON file."""
+def save_model_info(run_id: str, model_path: str, model_uri: str, file_path: str) -> None:
+    """Save the model run ID, path and URI to a JSON file."""
     try:
-        model_info = {'run_id': run_id, 'model_path': model_path}
+        model_info = {'run_id': run_id, 'model_path': model_path, 'model_uri': model_uri}
         with open(file_path, 'w') as file:
             json.dump(model_info, file, indent=4)
         logging.debug('Model info saved to %s', file_path)
@@ -109,35 +109,29 @@ def save_model_info(run_id: str, model_path: str, file_path: str) -> None:
 
 def main():
     mlflow.set_experiment("my-dvc-pipeline")
-    with mlflow.start_run() as run:  # Start an MLflow run
+    with mlflow.start_run() as run:
         try:
             clf = load_model('./models/model.pkl')
             test_data = load_data('./data/processed/test_bow.csv')
-            
+
             X_test = test_data.iloc[:, :-1].values
             y_test = test_data.iloc[:, -1].values
 
             metrics = evaluate_model(clf, X_test, y_test)
-            
             save_metrics(metrics, 'reports/metrics.json')
-            
-            # Log metrics to MLflow
+
             for metric_name, metric_value in metrics.items():
                 mlflow.log_metric(metric_name, metric_value)
-            
-            # Log model parameters to MLflow
+
             if hasattr(clf, 'get_params'):
-                params = clf.get_params()
-                for param_name, param_value in params.items():
+                for param_name, param_value in clf.get_params().items():
                     mlflow.log_param(param_name, param_value)
-            
-            # Log model to MLflow
-            mlflow.sklearn.log_model(clf, "model")
-            
-            # Save model info
-            save_model_info(run.info.run_id, "model", 'reports/experiment_info.json')
-            
-            # Log the metrics file to MLflow
+
+            # Log model and keep its URI
+            model_info = mlflow.sklearn.log_model(clf, name="model")
+
+            save_model_info(run.info.run_id, "model", model_info.model_uri, 'reports/experiment_info.json')
+
             mlflow.log_artifact('reports/metrics.json')
 
         except Exception as e:

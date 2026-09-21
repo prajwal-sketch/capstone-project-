@@ -1,5 +1,4 @@
 # register model
-
 import json
 import mlflow
 import logging
@@ -31,8 +30,8 @@ warnings.filterwarnings("ignore")
 
 # Below code block is for local use
 # -------------------------------------------------------------------------------------
-mlflow.set_tracking_uri('https://dagshub.com/prajwal-sketch/capstone-project-')
 dagshub.init(repo_owner='prajwal-sketch', repo_name='capstone-project-', mlflow=True)
+mlflow.set_tracking_uri('https://dagshub.com/prajwal-sketch/capstone-project-.mlflow')
 # -------------------------------------------------------------------------------------
 
 
@@ -81,6 +80,12 @@ def main():
     except Exception as e:
         logging.error('Failed to complete the model registration process: %s', e)
         print(f"Error: {e}")
+
+with open("reports/experiment_info.json") as f:
+    info = json.load(f)
+
+result = mlflow.register_model(info["model_uri"], "my_model")
+print(f"Registered my_model version {result.version}")
 
 if __name__ == '__main__':
     main()
