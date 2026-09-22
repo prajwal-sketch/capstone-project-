@@ -70,26 +70,25 @@ def normalize_text(text):
 
 # Below code block is for local use
 # -------------------------------------------------------------------------------------
-mlflow.set_tracking_uri('https://dagshub.com/prajwal-sketch/capstone-project-.mlflow')
-dagshub.init(repo_owner='prajwal-sketch', repo_name='capstone-project-', mlflow=True)
+# mlflow.set_tracking_uri('https://dagshub.com/prajwal-sketch/capstone-project-.mlflow')
+# dagshub.init(repo_owner='prajwal-sketch', repo_name='capstone-project-', mlflow=True)
 # -------------------------------------------------------------------------------------
 
 # Below code block is for production use
 # -------------------------------------------------------------------------------------
 # Set up DagsHub credentials for MLflow tracking
-# dagshub_token = os.getenv("CAPSTONE_TEST")
-# if not dagshub_token:
-#     raise EnvironmentError("CAPSTONE_TEST environment variable is not set")
+dagshub_token = os.getenv("CAPSTONE_TEST")
+repo_owner = "prajwal-sketch"
+repo_name = "capstone-project-"
 
-# os.environ["MLFLOW_TRACKING_USERNAME"] = dagshub_token
-# os.environ["MLFLOW_TRACKING_PASSWORD"] = dagshub_token
-
-# dagshub_url = "https://dagshub.com"
-# repo_owner = "prajwal-sketch"
-# repo_name = "capstone-project-"
-# # Set up MLflow tracking URI
-# mlflow.set_tracking_uri(f'{dagshub_url}/{repo_owner}/{repo_name}.mlflow')
-# -------------------------------------------------------------------------------------
+if dagshub_token:
+    os.environ["MLFLOW_TRACKING_USERNAME"] = repo_owner
+    os.environ["MLFLOW_TRACKING_PASSWORD"] = dagshub_token
+    mlflow.set_tracking_uri(f"https://dagshub.com/{repo_owner}/{repo_name}.mlflow")
+else:
+    dagshub.init(repo_owner=repo_owner, repo_name=repo_name, mlflow=True)
+    mlflow.set_tracking_uri(f"https://dagshub.com/{repo_owner}/{repo_name}.mlflow")
+# --------------------------------------------------------------------------------
 
 
 # Initialize Flask app
@@ -119,15 +118,11 @@ def get_latest_model_version(model_name):
     client = mlflow.MlflowClient()
     try:
         versions = client.search_model_versions(f"name='{model_name}'")
-    except mlflow.exceptions.RestException as e:
-        raise RuntimeError(
-            f"Model '{model_name}' not found in registry. "
-            f"Register it first or fix model_name. Original error: {e}"
-        )
+    except Exception as e:
+        raise RuntimeError(f"Could not fetch versions for '{model_name}': {e}")
     if not versions:
         raise RuntimeError(f"No versions found for '{model_name}'.")
 
-    # Prefer Production, otherwise take the newest version
     prod = [v for v in versions if v.current_stage == "Production"]
     pool = prod if prod else versions
     return max(pool, key=lambda v: int(v.version)).version
